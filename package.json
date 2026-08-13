@@ -1,0 +1,20 @@
+{
+  "name": "ci-cd-questionnaire-lab",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Hands-on, build-it-yourself study lab for CI/CD & GitHub Actions. A workflow YAML analyzer, an interactive merge-gate simulator, and a simulated Actions terminal — plus explanations and self-quizzes for every concept.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.2.0",
+    "vite": "^7.3.6"
+  }
+}
