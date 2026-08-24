@@ -67,6 +67,22 @@ src/
   styles.css               visual system
 ```
 
+## Styling
+
+The colour tokens, the accent rules and the contrast floor are documented in
+[STYLE.md](STYLE.md). Read it before you change [src/styles.css](src/styles.css).
+
+This app uses the shared paper/phosphor token system: one `light-dark()` value
+per colour, e-ink paper in the light scheme and CRT phosphor in the dark one. It
+follows the reader's operating system appearance — there is no in-app switch.
+
+[tools/contrast-audit.py](tools/contrast-audit.py) checks every colour against
+the surface it lands on. It must exit 0 before you commit a stylesheet change:
+
+```bash
+python3 tools/contrast-audit.py src/styles.css
+```
+
 ## Deploy to GitHub Pages
 
 A workflow at `.github/workflows/deploy.yml` builds and publishes on every push to `master`. In the repo, go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**. The site is then served at `https://<user>.github.io/ci-cd-questionnaire-lab-/`.
