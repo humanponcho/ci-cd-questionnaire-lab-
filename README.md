@@ -89,4 +89,4 @@ A workflow at `.github/workflows/deploy.yml` builds and publishes on every push 
 
 ## Credits
 
-Structure and visual system adapted from the Dev Questionnaire Lab. Content based on a real production monorepo CI/CD setup.
+Structure and visual system adapted from the Dev Questionnaire Lab. Content based on common production CI/CD patterns.
