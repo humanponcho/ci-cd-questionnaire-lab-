@@ -1,363 +1,972 @@
 /* ============================================================
    CI/CD Questionnaire Lab — visual system
-   Subject: a release engineer's working lab notebook.
-   Palette: ink-dark workspace, GitHub-merge violet signal, cool slate lines.
-   Type: Space Grotesk (display) + Inter (body) + JetBrains Mono (code/labels)
-   ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
+   Ported to the shared paper/phosphor token system used across
+   the questionnaire labs: a dual-scheme instrument panel, e-ink
+   paper in light and CRT phosphor in dark, driven entirely by
+   light-dark() tokens. The conventions are documented in STYLE.md.
+
+   Subject: a release engineer's working lab notebook.
+
+   What survived the port from this app's previous dark-only
+   sheet: nothing but the class names. Surfaces, ink scale, type,
+   radii and signal colours all now come from the shared system.
+   The one thing that stays this app's own is the accent HUE —
+   see --signal-note below.
+   ============================================================ */
+
+/* ── DESIGN TOKENS — LIGHT (e-ink paper) / DARK (inverse) ──── */
 :root {
-  --bg:        #0e1116;
-  --panel:     #161b22;
-  --panel-2:   #1c2129;
-  --line:      #2a313c;
-  --line-soft: #212832;
-  --ink:       #e6edf3;
-  --ink-dim:   #9aa7b4;
-  --ink-faint: #5f6b78;
-  --accent:     #a371f7;   /* GitHub merge violet */
-  --accent-dim: #7d54c9;
-  --green:     #3fb950;    /* passing check */
-  --red:       #e06c75;    /* failing check */
-  --blue:      #6cb6ff;
-  --amber:     #f5a623;
-  --radius: 8px;
-  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  --display: 'Space Grotesk', system-ui, sans-serif;
-  --body: 'Inter', system-ui, sans-serif;
+  color-scheme: light dark;
+
+  /* Background scale — base surface → most raised */
+  --black:  light-dark(#f0efe8, #0d0d0a);
+  --deep:   light-dark(#e8e7e0, #171714);
+  --panel:  light-dark(#e4e3dc, #1b1b18);
+  --glass:  light-dark(#ece9e2, #131310);
+  --g0:     light-dark(#cecdc6, #2e2e2a);
+
+  /* Ink scale — ordinal, not descriptive. --g1 is always the
+     strongest ink, whichever scheme is active. Pick by rank,
+     never by the colour it happens to be in one theme. */
+  --g1:  light-dark(#0d0d0a, #f0efe8);   /* headings, strong */
+  --g2:  light-dark(#1a1a16, #d8d7d0);   /* body prose */
+  --g3:  light-dark(#3a3a34, #b8b7b0);   /* muted text */
+  --g4:  light-dark(#606058, #888880);   /* instrument labels */
+  --g5:  light-dark(#aeada6, #3a3a34);   /* borders, dividers */
+
+  --dim: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.06));
+
+  /* ── SIGNAL ──────────────────────────────────────────────────
+     The one departure from the static site's greyscale accents.
+     Quiz feedback, terminal log levels and layer-cache tags encode
+     state in colour, so removing it would remove the information.
+     Muted on both sides — these mark a status, they don't decorate.
+
+     These three carry small coloured TEXT, so each value clears
+     4.5:1 against the darkest surface it can land on. That is
+     --panel for callout rules and analyser chips, --glass for the
+     terminal and log lines, and --wash-ok / --wash-err composited
+     over --panel for the verdict banners.
+
+     Note the wash ground: --panel, not the --glass the quiz rows
+     use. The verdict banner sits directly on .pg, and --panel is
+     the nearer surface in BOTH schemes — darker on paper, lighter
+     on phosphor. Two values here are one step off the sibling labs
+     because of it: --signal-ok light and --signal-err dark.
+
+     Retune by lightness only: the hue and the saturation are what
+     make a status read as the same status in both schemes. */
+  --signal-ok:   light-dark(#526119, #879e2b);
+  --signal-err:  light-dark(#992918, #e46c59);
+  --signal-warn: light-dark(#9d4d1b, #eb7024);
+
+  /* A firmer red, for shapes that sit NEXT TO --signal-warn. Never
+     for text.
+
+     --signal-err has to clear 4.5:1 as body text on the error wash
+     over --panel. That floor forces it up to a salmon lightness of
+     62%, which lands it well ABOVE --signal-warn (53%), and side by
+     side at 8px the two collapse into a pair of oranges. A shape
+     answers to 3:1, not 4.5:1, so this variant drops to 52% and
+     sits below the warning again.
+
+     Use it only where the red and the warning are adjacent — today
+     that is the traffic-light dots. A lone red rule with no orange
+     near it should stay on --signal-err, so the two reds do not
+     drift apart for no reason. Same hue and saturation; lightness
+     only. Paper needs no variant: #992918 is already firm there. */
+  --signal-err-deep: light-dark(#992918, #dd442c);
+  /* The violet accent. Carries "informational" state (log lines,
+     tags) AND the accent highlights throughout, so it has to read
+     as small text on the darkest chip in either scheme.
+
+     This app keeps its own hue — 262deg, inherited from the
+     pre-migration accent #a371f7 — and adopts the system's chroma
+     so it sits in the same muted register as the sibling labs.
+     Both values are the SAME colour: hue 262deg, saturation
+     42%, separated only by lightness (32% on paper,
+     68% on phosphor). A single shared value would fail
+     against --g0. Keep hue and saturation locked if you retune
+     it; move lightness only. */
+  --signal-note: light-dark(#492f74, #a48acf);
+
+  /* Answer-state fills. Tokenised rather than written inline so the
+     alpha can differ per scheme — paper needs a lighter wash than
+     phosphor to stay legible under black text. */
+  --wash-ok:  light-dark(rgba(31, 111, 79, 0.10), rgba(78, 201, 167, 0.12));
+  --wash-err: light-dark(rgba(160, 18, 38, 0.08), rgba(224, 108, 117, 0.12));
+
+  /* Phosphor vignette — invisible on paper, faint in dark */
+  --overlay-vignette: light-dark(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.4));
+
+  /* Bloom colours — transparent in light (paper emits no light),
+     so every glow composed from them self-erases in the light
+     scheme with no scheme-specific rule anywhere below. */
+  --bloom-30: light-dark(rgba(240, 239, 232, 0), rgba(240, 239, 232, 0.3));
+  --bloom-50: light-dark(rgba(240, 239, 232, 0), rgba(240, 239, 232, 0.5));
+
+  /* Glow helpers */
+  --glow-sm: 0 0 4px var(--bloom-30);
+  --glow-md: 0 0 8px var(--bloom-30), 0 0 2px var(--bloom-50);
+  --glow-lg: 0 0 16px var(--bloom-30), 0 0 4px var(--bloom-50);
+
+  /* ── TYPE ────────────────────────────────────────────────────
+     The static site's three families, roles reassigned for a text-
+     heavy app. Every stack declares its generic fallback so a
+     blocked font CDN degrades instead of dropping to Times. */
+  --mono:    'Share Tech Mono', monospace;   /* code, labels, terminal */
+  --display: 'Orbitron', sans-serif;         /* headings, brand */
+  --body:    'Rajdhani', sans-serif;         /* prose, UI copy */
+
+  /* ── JSX-REFERENCED ALIASES ──────────────────────────────────
+     Three inline style attributes name CSS variables directly
+     (Quiz.jsx, ComposeLab.jsx). These aliases keep those call
+     sites working without touching the markup. Delete them only
+     alongside the inline styles that read them. */
+  --ink-faint: var(--g4);
+  --accent:    var(--signal-note);
 }
 
+/* ── RESET ─────────────────────────────────────────────────── */
 * { box-sizing: border-box; }
+
 html, body, #root { height: 100%; }
+
+/* ── BASE ──────────────────────────────────────────────────── */
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--ink);
+  background: var(--black);
+  color: var(--g2);
   font-family: var(--body);
-  font-size: 15px;
+  font-size: 16px;   /* Rajdhani is condensed — a point up holds the measure */
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  /* The instrument labels below are deliberately 8-10px. Stop iOS
+     Safari auto-inflating them and breaking the fixed-width columns
+     in the rail and the layer table. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ── PHOSPHOR VIGNETTE ─────────────────────────────────────── */
+/* Sits above everything and takes no clicks. Scanlines and the
+   noise layer from the reference sheet are deliberately omitted —
+   a 2px repeating pattern over body copy and the code editors
+   costs more legibility than it buys atmosphere. */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 998; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 50%, var(--overlay-vignette) 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
 
-/* ---------- layout shell ---------- */
+/* ── LAYOUT SHELL ──────────────────────────────────────────── */
 .shell { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
 
 .rail {
-  border-right: 1px solid var(--line);
-  background: linear-gradient(180deg, #0c0f14, #0e1116);
+  border-right: 1px solid var(--g4);
+  background: var(--deep);
   padding: 22px 0 40px;
   position: sticky; top: 0; height: 100vh; overflow-y: auto;
 }
+
 .rail-head { padding: 0 22px 18px; }
+
 .brand {
-  font-family: var(--display); font-weight: 700; font-size: 19px;
-  letter-spacing: -0.02em; color: var(--ink); margin: 0;
+  font-family: var(--display);
+  font-size: clamp(15px, 1.4vw, 17px); font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--g2);
+  line-height: 1.25;
+  margin: 0;
 }
-.brand .dot { color: var(--accent); }
+
+.brand .dot { color: var(--signal-note); text-shadow: var(--glow-sm); }
+
 .brand-sub {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--ink-faint); margin-top: 6px;
-}
-.progress-wrap { padding: 0 22px 8px; }
-.progress-track { height: 4px; background: var(--line-soft); border-radius: 99px; overflow: hidden; }
-.progress-fill { height: 100%; background: var(--accent); transition: width .3s ease; }
-.progress-label { font-family: var(--mono); font-size: 11px; color: var(--ink-dim); margin-top: 6px; }
-
-.rail-group-title {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--ink-faint);
-  padding: 18px 22px 6px;
-}
-.rail-item {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%; text-align: left; background: none; border: 0;
-  color: var(--ink-dim); font-family: var(--body); font-size: 13.5px;
-  padding: 7px 22px; cursor: pointer; line-height: 1.35;
-  border-left: 2px solid transparent;
-}
-.rail-item:hover { color: var(--ink); background: var(--panel); }
-.rail-item.active { color: var(--ink); border-left-color: var(--accent); background: var(--panel); }
-.rail-num { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); min-width: 22px; }
-.rail-item.active .rail-num { color: var(--accent); }
-.rail-check { margin-left: auto; color: var(--green); font-size: 12px; }
-
-/* ---------- main ---------- */
-.main { padding: 0; overflow-x: hidden; }
-.topic-wrap { max-width: 880px; margin: 0 auto; padding: 46px 40px 120px; }
-
-.eyebrow {
-  font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
-  display: flex; align-items: center; gap: 10px;
-}
-.eyebrow::before {
-  content: ""; width: 26px; height: 1px; background: var(--accent-dim);
-}
-h1.topic-title {
-  font-family: var(--display); font-weight: 700; font-size: 30px;
-  letter-spacing: -0.025em; line-height: 1.15; margin: 0 0 22px;
-}
-h2.block-title {
-  font-family: var(--display); font-weight: 500; font-size: 17px;
-  letter-spacing: -0.01em; margin: 34px 0 12px; color: var(--ink);
-  display: flex; align-items: baseline; gap: 10px;
-}
-h2.block-title .tag {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--ink-faint);
-  border: 1px solid var(--line); border-radius: 4px; padding: 2px 6px;
-}
-.prose p { margin: 0 0 12px; color: var(--ink); }
-.prose strong { color: #fff; font-weight: 600; }
-.prose ul { margin: 4px 0 14px; padding-left: 0; list-style: none; }
-.prose li { position: relative; padding-left: 20px; margin: 6px 0; color: var(--ink); }
-.prose li::before {
-  content: "▸"; position: absolute; left: 2px; color: var(--accent); font-size: 12px; top: 1px;
-}
-.prose li strong { color: #fff; }
-.prose code, .inline-code {
-  font-family: var(--mono); font-size: 12.5px;
-  background: var(--panel-2); border: 1px solid var(--line-soft);
-  border-radius: 4px; padding: 1px 5px; color: var(--accent);
-}
-
-/* ---------- callouts ---------- */
-.callout {
-  border: 1px solid var(--line); border-left: 3px solid var(--accent);
-  background: var(--panel); border-radius: var(--radius);
-  padding: 14px 16px; margin: 16px 0; font-size: 14px;
-}
-.callout.warn { border-left-color: var(--red); }
-.callout.tip { border-left-color: var(--green); }
-.callout-label {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--ink-dim); margin-bottom: 6px;
-}
-.callout code, .callout .inline-code { color: var(--accent); }
-
-/* ---------- tables ---------- */
-.tbl-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: var(--radius); }
-table.tbl { border-collapse: collapse; width: 100%; font-size: 13.5px; }
-table.tbl th, table.tbl td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
-table.tbl th {
-  font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--ink-dim); background: var(--panel-2); position: sticky; top: 0;
-}
-table.tbl tr:last-child td { border-bottom: 0; }
-table.tbl td code, table.tbl th code { color: var(--accent); }
-table.tbl td .yes { color: var(--green); font-weight: 600; }
-table.tbl td .no { color: var(--ink-faint); }
-
-/* ---------- playground shell (shared) ---------- */
-.pg {
-  border: 1px solid var(--line); border-radius: var(--radius);
-  overflow: hidden; margin: 18px 0 6px; background: var(--panel);
-}
-.pg-bar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 14px; background: var(--panel-2); border-bottom: 1px solid var(--line);
-}
-.pg-dots { display: flex; gap: 6px; margin-right: 6px; }
-.pg-dot { width: 10px; height: 10px; border-radius: 50%; }
-.pg-dot.r { background: #ff5f56; } .pg-dot.y { background: #ffbd2e; } .pg-dot.g { background: #27c93f; }
-.pg-name { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); }
-.pg-actions { margin-left: auto; display: flex; gap: 8px; }
-.btn {
-  font-family: var(--mono); font-size: 12px; cursor: pointer;
-  border: 1px solid var(--line); background: var(--panel);
-  color: var(--ink); border-radius: 6px; padding: 5px 12px;
-  display: inline-flex; align-items: center; gap: 6px;
-}
-.btn:hover { border-color: var(--ink-faint); }
-.btn.run { background: var(--accent); color: #140a24; border-color: var(--accent); font-weight: 700; }
-.btn.run:hover { background: #b98bff; }
-.btn:disabled { opacity: .5; cursor: default; }
-
-.pg-editor {
-  width: 100%; border: 0; resize: vertical; min-height: 120px;
-  background: #0c0f14; color: #d7e0ea; font-family: var(--mono);
-  font-size: 13px; line-height: 1.65; padding: 14px 16px; tab-size: 2;
-  outline: none; display: block;
-}
-.pg-out {
-  border-top: 1px solid var(--line); background: #0a0d11;
-  font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
-  padding: 12px 16px; white-space: pre-wrap; color: var(--ink-dim);
-  max-height: 360px; overflow: auto;
-}
-.pg-out .log-err { color: var(--red); }
-.pg-out .log-info { color: var(--blue); }
-.pg-out .log-ok { color: var(--green); }
-.pg-out .log-warn { color: var(--amber); }
-.pg-out .log-muted { color: var(--ink-faint); }
-.pg-out-label {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--ink-faint); padding: 8px 16px 0;
-  background: #0a0d11;
-}
-
-/* ---------- static code block ---------- */
-.code-static {
-  border: 1px solid var(--line); border-radius: var(--radius);
-  overflow: hidden; margin: 16px 0; background: var(--panel);
-}
-.code-static .pg-bar { background: var(--panel-2); }
-.code-static pre {
-  margin: 0; background: #0c0f14; color: #d7e0ea;
-  font-family: var(--mono); font-size: 13px; line-height: 1.65;
-  padding: 14px 16px; overflow-x: auto; tab-size: 2;
-}
-.code-static .cmt { color: var(--ink-faint); }
-.code-static .kw { color: var(--accent); font-weight: 700; }
-
-/* ---------- terminal ---------- */
-.term-out {
-  background: #0a0d11; font-family: var(--mono); font-size: 12.5px;
-  line-height: 1.6; padding: 12px 16px 4px; color: var(--ink-dim);
-  max-height: 380px; overflow: auto; white-space: pre-wrap;
-}
-.term-line.cmd { color: var(--ink); }
-.term-line.cmd .prompt { color: var(--green); margin-right: 8px; }
-.term-line.out { color: var(--ink-dim); }
-.term-line.out.ok { color: var(--green); }
-.term-line.out.err { color: var(--red); }
-.term-line.out.warn { color: var(--amber); }
-.term-line.out.head { color: var(--blue); }
-.term-inrow {
-  display: flex; align-items: center; gap: 8px;
-  background: #0a0d11; border-top: 1px solid var(--line-soft);
-  padding: 8px 16px 12px;
-}
-.term-inrow .prompt { color: var(--green); font-family: var(--mono); font-size: 12.5px; }
-.term-input {
-  flex: 1; background: transparent; border: 0; outline: none;
-  color: var(--ink); font-family: var(--mono); font-size: 12.5px;
-}
-.term-hint { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); padding: 6px 16px 0; }
-
-/* ---------- workflow analyzer ---------- */
-.wf-trigger { display: inline-block; font-family: var(--mono); font-size: 11px;
-  color: var(--blue); border: 1px solid var(--line); border-radius: 4px;
-  padding: 1px 7px; margin: 0 6px 4px 0; }
-.job-row { padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
-.job-row:last-child { border-bottom: 0; }
-.job-name { color: var(--ink); font-weight: 600; }
-.job-badges { display: inline-flex; gap: 6px; margin-left: 8px; flex-wrap: wrap; }
-.jb { font-size: 10px; letter-spacing: .05em; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; }
-.jb.reusable { color: var(--accent); border: 1px solid var(--accent); }
-.jb.report { color: var(--amber); border: 1px solid var(--amber); }
-.jb.needs { color: var(--blue); border: 1px solid var(--line); }
-.jb.steps { color: var(--ink-faint); border: 1px solid var(--line); }
-.job-meta { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; }
-.check-row { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
-.check-row .ico { width: 14px; flex: none; }
-.check-row.ok { color: var(--green); }
-.check-row.warn { color: var(--amber); }
-.check-row.err { color: var(--red); }
-.check-row.note { color: var(--blue); }
-
-/* ---------- merge-gate simulator ---------- */
-.gate-verdict {
-  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
-  border-radius: var(--radius); margin: 0 0 14px; font-family: var(--mono);
-  font-size: 14px; font-weight: 700; border: 1px solid;
-}
-.gate-verdict.pass { color: var(--green); border-color: var(--green); background: rgba(63,185,80,.10); }
-.gate-verdict.block { color: var(--red); border-color: var(--red); background: rgba(224,108,117,.10); }
-.gate-sub { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--ink-dim); margin: -6px 0 14px; }
-.gate-check {
-  display: grid; grid-template-columns: 84px 1fr auto; gap: 10px; align-items: center;
-  width: 100%; text-align: left; cursor: pointer;
-  border: 1px solid var(--line); background: var(--panel-2);
-  color: var(--ink); border-radius: 6px; padding: 9px 12px; margin: 7px 0;
-  font-family: var(--body); font-size: 13.5px;
-}
-.gate-check:hover { border-color: var(--ink-faint); }
-.gate-status { font-family: var(--mono); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-.gate-status.pass { color: var(--green); }
-.gate-status.fail { color: var(--red); }
-.gate-check .wf { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
-.gate-req { font-size: 10px; letter-spacing: .05em; text-transform: uppercase; border-radius: 4px; padding: 1px 7px; }
-.gate-req.required { color: var(--accent); border: 1px solid var(--accent); }
-.gate-req.optional { color: var(--ink-faint); border: 1px solid var(--line); }
-.gate-hint { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
-
-/* ---------- quiz ---------- */
-.quiz {
-  border: 1px solid var(--line); border-radius: var(--radius);
-  background: var(--panel); padding: 20px; margin: 30px 0 0;
-}
-.quiz-head {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--accent); margin-bottom: 4px;
-}
-.quiz-q { font-weight: 600; margin: 10px 0 14px; font-size: 15px; }
-.quiz-opt {
-  display: block; width: 100%; text-align: left; cursor: pointer;
-  border: 1px solid var(--line); background: var(--panel-2);
-  color: var(--ink); border-radius: 6px; padding: 11px 14px; margin: 8px 0;
-  font-family: var(--body); font-size: 14px; transition: border-color .15s, background .15s;
-}
-.quiz-opt:hover { border-color: var(--ink-faint); }
-.quiz-opt.correct { border-color: var(--green); background: rgba(63,185,80,.12); }
-.quiz-opt.wrong { border-color: var(--red); background: rgba(224,108,117,.12); }
-.quiz-opt.disabled { cursor: default; }
-.quiz-opt .mark { font-family: var(--mono); margin-right: 8px; color: var(--ink-faint); }
-.quiz-opt.correct .mark { color: var(--green); }
-.quiz-opt.wrong .mark { color: var(--red); }
-.quiz-explain {
-  margin-top: 12px; padding: 12px 14px; border-radius: 6px;
-  background: var(--panel-2); border: 1px solid var(--line-soft);
-  font-size: 13.5px; color: var(--ink-dim);
-}
-.quiz-explain strong { color: var(--ink); }
-.quiz-explain code, .quiz-explain .inline-code { color: var(--accent); }
-
-/* ---------- footer nav ---------- */
-.topic-nav {
-  display: flex; justify-content: space-between; gap: 16px;
-  margin-top: 46px; border-top: 1px solid var(--line); padding-top: 22px;
-}
-.nav-btn {
-  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
-  border-radius: var(--radius); padding: 12px 18px; cursor: pointer;
-  font-family: var(--body); display: flex; flex-direction: column; gap: 2px;
-  min-width: 0; flex: 1; text-align: left;
-}
-.nav-btn.next { text-align: right; align-items: flex-end; }
-.nav-btn:hover { border-color: var(--accent-dim); }
-.nav-btn:disabled { opacity: .35; cursor: default; }
-.nav-dir { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
-.nav-ttl { font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-
-.done-btn {
-  font-family: var(--mono); font-size: 12px; cursor: pointer;
-  border: 1px solid var(--line); background: var(--panel); color: var(--ink-dim);
-  border-radius: 6px; padding: 8px 14px; display: inline-flex; gap: 8px; align-items: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--g4);
   margin-top: 8px;
 }
-.done-btn.done { border-color: var(--green); color: var(--green); }
 
-/* ---------- intro / home ---------- */
-.home { max-width: 820px; margin: 0 auto; padding: 70px 40px 120px; }
-.home-hero { font-family: var(--display); font-weight: 700; font-size: 40px; letter-spacing: -0.03em; line-height: 1.08; margin: 0 0 18px; }
-.home-hero em { color: var(--accent); font-style: normal; }
-.home-lead { font-size: 17px; color: var(--ink-dim); max-width: 640px; margin: 0 0 30px; }
+/* ── PROGRESS BAR ──────────────────────────────────────────── */
+/* The reference sheet's .bar-track / .bar-fill pair: a 4px square
+   trough, ink fill, glow that self-erases on paper. */
+.progress-wrap { padding: 0 22px 8px; }
+
+.progress-track {
+  height: 4px;
+  background: var(--g0);
+  border: 1px solid var(--g5);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--signal-note);
+  box-shadow: var(--glow-sm);
+  transition: width 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.progress-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--g4);
+  margin-top: 8px;
+}
+
+/* ── RAIL NAVIGATION ───────────────────────────────────────── */
+.rail-group-title {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--g4);
+  padding: 20px 22px 6px;
+}
+
+/* Instrument nomenclature, matching the reference sheet's
+   `// LABEL` widget-label convention. */
+.rail-group-title::before { content: '// '; }
+
+.rail-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
+  background: none; border: 0;
+  border-left: 1px solid transparent;
+  color: var(--g3);
+  font-family: var(--body); font-size: 15px;
+  padding: 7px 22px; cursor: pointer; line-height: 1.35;
+  transition: color 0.15s, background 0.15s;
+}
+
+.rail-item:hover { color: var(--g1); background: var(--panel); }
+
+.rail-item.active {
+  color: var(--g1);
+  border-left-color: var(--signal-note);
+  background: var(--panel);
+}
+
+.rail-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--g4);
+  /* ch scales with the rendered font, so the column survives
+     browser minimum-font-size / text-only-zoom inflation */
+  min-width: 3ch;
+}
+
+.rail-item.active .rail-num { color: var(--signal-note); }
+
+.rail-check { margin-left: auto; color: var(--signal-ok); font-size: 12px; }
+
+/* ── MAIN COLUMN ───────────────────────────────────────────── */
+.main { padding: 0; overflow-x: hidden; }
+
+.topic-wrap {
+  position: relative;   /* anchors the corner brackets below */
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 46px 40px 120px;
+}
+
+/* Corner brackets, as on the reference sheet's centre panel —
+   they frame the reading column as an instrument readout. */
+.topic-wrap::before, .topic-wrap::after {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  border-color: var(--g3);
+  border-style: solid;
+  opacity: 0.5;
+  pointer-events: none;
+}
+.topic-wrap::before { top: 20px;    left: 8px;  border-width: 1px 0 0 1px; }
+.topic-wrap::after  { bottom: 80px; right: 8px; border-width: 0 1px 1px 0; }
+
+/* ── HEADINGS ──────────────────────────────────────────────── */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--signal-note);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.eyebrow::before { content: '//'; }
+
+h1.topic-title {
+  font-family: var(--display);
+  font-size: clamp(22px, 3vw, 30px); font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  color: var(--g1);
+  text-shadow: var(--glow-md);
+  margin: 0 0 24px;
+}
+
+h2.block-title {
+  font-family: var(--display);
+  font-size: clamp(14px, 1.6vw, 16px); font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--g1);
+  margin: 36px 0 12px;
+  display: flex; align-items: baseline; gap: 10px;
+}
+
+h2.block-title .tag {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--g4);
+  border: 1px solid var(--g5);
+  padding: 2px 6px;
+}
+
+/* ── PROSE ─────────────────────────────────────────────────── */
+.prose p { margin: 0 0 12px; color: var(--g2); }
+.prose strong { color: var(--g1); font-weight: 600; }
+.prose ul { margin: 4px 0 14px; padding-left: 0; list-style: none; }
+.prose li { position: relative; padding-left: 20px; margin: 6px 0; color: var(--g2); }
+.prose li::before {
+  content: '▸'; position: absolute; left: 2px; top: 1px;
+  color: var(--signal-note); font-size: 12px;
+}
+.prose li strong { color: var(--g1); }
+
+.prose code, .inline-code {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--g0);
+  border: 1px solid var(--g5);
+  padding: 1px 5px;
+  color: var(--signal-note);
+}
+
+/* ── CALLOUTS ──────────────────────────────────────────────── */
+/* Left rule is 1px like every other border here; the signal colour
+   alone carries the variant, so the frame stays uniform. */
+.callout {
+  border: 1px solid var(--g5);
+  border-left: 1px solid var(--signal-note);
+  background: var(--panel);
+  padding: 14px 16px;
+  margin: 16px 0;
+  font-size: 15px;
+}
+
+.callout.warn { border-left-color: var(--signal-err); }
+.callout.tip  { border-left-color: var(--signal-ok); }
+
+.callout-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--g4);
+  margin-bottom: 6px;
+}
+
+.callout code, .callout .inline-code { color: var(--signal-note); }
+
+/* ── PLAYGROUND SHELL (shared) ─────────────────────────────── */
+.pg {
+  position: relative;
+  border: 1px solid var(--g5);
+  overflow: hidden;
+  margin: 18px 0 6px;
+  background: var(--panel);
+}
+
+/* The reference sheet's signature card treatment: a hairline of
+   light along the top edge, strongest in the middle. */
+.pg::before, .code-static::before, .quiz::before, .home-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--g3), transparent);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pg-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px;
+  background: var(--g0);
+  border-bottom: 1px solid var(--g5);
+}
+
+/* Window-chrome traffic lights, borrowing the signal palette so the
+   three dots read as the familiar stop/hold/go ramp rather than an
+   arbitrary trio. They label a window, not a state, so they stay at
+   8px and are never the brightest thing in the panel.
+
+   The red uses --signal-err-deep, not --signal-err: at this size the
+   text-legible red is lighter than the warning and the two collapse
+   into one hue. See the token declaration for why. */
+.pg-dots { display: flex; gap: 6px; margin-right: 6px; }
+.pg-dot { width: 8px; height: 8px; border-radius: 50%; }
+.pg-dot.r { background: var(--signal-err-deep); }
+.pg-dot.y { background: var(--signal-warn); }
+.pg-dot.g { background: var(--signal-ok); }
+
+.pg-name {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--g4);
+}
+
+.pg-actions { margin-left: auto; display: flex; gap: 8px; }
+
+/* ── BUTTONS ───────────────────────────────────────────────── */
+.btn {
+  position: relative;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--g4);
+  background: var(--panel);
+  color: var(--g2);
+  padding: 7px 14px;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.25s ease;
+}
+
+/* Glow composes --bloom-*, so it renders as nothing on paper and as
+   a phosphor bloom in dark — no scheme override needed. */
+.btn:hover {
+  border-color: var(--g2);
+  color: var(--g1);
+  box-shadow: var(--glow-md), inset 0 0 20px var(--dim);
+  text-shadow: var(--glow-sm);
+}
+
+/* Inverted ink chip — the primary action, matching the reference
+   sheet's checked mode-toggle button. */
+.btn.run {
+  background: var(--signal-note);
+  color: var(--black);
+  border-color: var(--signal-note);
+}
+
+/* brightness() rather than a second token: the shift has to go the
+   same visual direction in both schemes, and the light value is
+   dark ink while the dark value is light ink. */
+.btn.run:hover {
+  filter: brightness(1.15);
+  color: var(--black);
+  text-shadow: none;
+}
+
+.btn:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+
+/* ── EDITORS AND OUTPUT ────────────────────────────────────── */
+.pg-editor {
+  width: 100%;
+  border: 0; resize: vertical; min-height: 120px;
+  background: var(--glass);
+  color: var(--g2);
+  font-family: var(--mono);
+  font-size: 13px; line-height: 1.65;
+  padding: 14px 16px; tab-size: 2;
+  outline: none; display: block;
+}
+
+.pg-editor:focus-visible {
+  outline: 1px dashed var(--g4);
+  outline-offset: -3px;
+}
+
+.pg-out {
+  border-top: 1px solid var(--g5);
+  background: var(--glass);
+  font-family: var(--mono);
+  font-size: 12.5px; line-height: 1.6;
+  padding: 12px 16px;
+  white-space: pre-wrap;
+  color: var(--g3);
+  max-height: 340px; overflow: auto;
+}
+
+.pg-out .log-err   { color: var(--signal-err); }
+.pg-out .log-info  { color: var(--signal-note); }
+.pg-out .log-ok    { color: var(--signal-ok); }
+.pg-out .log-warn  { color: var(--signal-warn); }
+.pg-out .log-muted { color: var(--g4); }
+
+.pg-out-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--g4);
+  padding: 10px 16px 0;
+  background: var(--glass);
+}
+
+/* ── STATIC CODE BLOCK ─────────────────────────────────────── */
+.code-static {
+  position: relative;
+  border: 1px solid var(--g5);
+  overflow: hidden;
+  margin: 16px 0;
+  background: var(--panel);
+}
+
+.code-static .pg-bar { background: var(--g0); }
+
+.code-static pre {
+  margin: 0;
+  background: var(--glass);
+  color: var(--g2);
+  font-family: var(--mono);
+  font-size: 13px; line-height: 1.65;
+  padding: 14px 16px; overflow-x: auto; tab-size: 2;
+}
+
+.code-static .cmt { color: var(--g4); }
+.code-static .kw  { color: var(--signal-note); font-weight: 700; }
+
+/* ── TERMINAL ──────────────────────────────────────────────── */
+.term-out {
+  background: var(--glass);
+  font-family: var(--mono);
+  font-size: 12.5px; line-height: 1.6;
+  padding: 12px 16px 4px;
+  color: var(--g3);
+  max-height: 360px; overflow: auto;
+  white-space: pre-wrap;
+}
+
+.term-line.cmd { color: var(--g1); }
+.term-line.cmd .prompt { color: var(--signal-ok); margin-right: 8px; }
+.term-line.out { color: var(--g3); }
+.term-line.out.ok   { color: var(--signal-ok); }
+.term-line.out.err  { color: var(--signal-err); }
+.term-line.out.warn { color: var(--signal-warn); }
+.term-line.out.head { color: var(--signal-note); }
+
+.term-inrow {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--glass);
+  border-top: 1px solid var(--g5);
+  padding: 8px 16px 12px;
+}
+
+.term-inrow .prompt { color: var(--signal-ok); font-family: var(--mono); font-size: 12.5px; }
+
+.term-input {
+  flex: 1;
+  background: transparent; border: 0; outline: none;
+  color: var(--g1);
+  font-family: var(--mono); font-size: 12.5px;
+}
+
+.term-hint {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--g4);
+  padding: 6px 16px 0;
+}
+
+/* Status rows in the analyser panels. */
+.check-row { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
+.check-row .ico { width: 14px; flex: none; }
+.check-row.ok   { color: var(--signal-ok); }
+.check-row.warn { color: var(--signal-warn); }
+.check-row.err  { color: var(--signal-err); }
+.check-row.note { color: var(--signal-note); }
+
+/* ── DATA TABLE ────────────────────────────────────────────── */
+/* Same frame as .pg and .code-static: 1px hairline, square corners,
+   header on the raised chip. Cells wrap rather than truncate — the
+   content here is prose in a grid, not a spreadsheet. */
+.tbl-wrap {
+  overflow-x: auto;
+  margin: 16px 0;
+  border: 1px solid var(--g5);
+  background: var(--panel);
+}
+
+table.tbl { border-collapse: collapse; width: 100%; font-size: 14px; }
+
+table.tbl th, table.tbl td {
+  text-align: left;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--g5);
+  vertical-align: top;
+}
+
+table.tbl th {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--g4);
+  background: var(--g0);
+  position: sticky; top: 0;
+  font-weight: 400;
+}
+
+table.tbl tr:last-child td { border-bottom: 0; }
+table.tbl td code, table.tbl th code { color: var(--signal-note); }
+table.tbl td .yes { color: var(--signal-ok); }
+table.tbl td .no  { color: var(--g4); }
+
+/* ── QUIZ ──────────────────────────────────────────────────── */
+.quiz {
+  position: relative;
+  border: 1px solid var(--g5);
+  background: var(--panel);
+  padding: 20px;
+  margin: 30px 0 0;
+}
+
+.quiz-head {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--signal-note);
+  margin-bottom: 4px;
+}
+
+.quiz-head::before { content: '// '; }
+
+.quiz-q { font-weight: 600; margin: 10px 0 14px; font-size: 16px; color: var(--g1); }
+
+/* --glass rather than --g0: an option row is a large surface, and --g0
+   is a big enough perceptual step on paper that four of them stack into
+   grey slabs. --glass sits one step off the ground in both schemes, so
+   the row reads as a well cut into the card either way. */
+.quiz-opt {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  border: 1px solid var(--g5);
+  background: var(--glass);
+  color: var(--g2);
+  padding: 11px 14px; margin: 8px 0;
+  font-family: var(--body); font-size: 15px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.quiz-opt:hover { border-color: var(--g2); color: var(--g1); }
+
+.quiz-opt.correct { border-color: var(--signal-ok);  background: var(--wash-ok); }
+.quiz-opt.wrong   { border-color: var(--signal-err); background: var(--wash-err); }
+.quiz-opt.disabled { cursor: default; }
+
+.quiz-opt .mark { font-family: var(--mono); margin-right: 8px; color: var(--g4); }
+.quiz-opt.correct .mark { color: var(--signal-ok); }
+.quiz-opt.wrong .mark   { color: var(--signal-err); }
+
+.quiz-explain {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--glass);
+  border: 1px solid var(--g5);
+  font-size: 15px;
+  color: var(--g3);
+}
+
+.quiz-explain strong { color: var(--g1); }
+.quiz-explain code, .quiz-explain .inline-code { color: var(--signal-note); }
+
+/* ── FOOTER NAV ────────────────────────────────────────────── */
+.topic-nav {
+  display: flex; justify-content: space-between; gap: 16px;
+  margin-top: 46px;
+  border-top: 1px solid var(--g4);
+  padding-top: 22px;
+}
+
+.nav-btn {
+  border: 1px solid var(--g5);
+  background: var(--panel);
+  color: var(--g2);
+  padding: 12px 18px; cursor: pointer;
+  font-family: var(--body);
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0; flex: 1; text-align: left;
+  transition: all 0.25s ease;
+}
+
+.nav-btn.next { text-align: right; align-items: flex-end; }
+
+.nav-btn:hover {
+  border-color: var(--signal-note);
+  color: var(--g1);
+  box-shadow: var(--glow-md), inset 0 0 20px var(--dim);
+}
+
+.nav-btn:disabled { opacity: 0.35; cursor: default; box-shadow: none; }
+
+.nav-dir {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--g4);
+}
+
+.nav-ttl {
+  font-size: 15px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+}
+
+.done-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--g5);
+  background: var(--panel);
+  color: var(--g3);
+  padding: 8px 14px;
+  display: inline-flex; gap: 8px; align-items: center;
+  margin-top: 8px;
+  transition: all 0.25s ease;
+}
+
+.done-btn:hover { border-color: var(--g2); color: var(--g1); box-shadow: var(--glow-md); }
+.done-btn.done  { border-color: var(--signal-ok); color: var(--signal-ok); }
+
+/* ── HOME ──────────────────────────────────────────────────── */
+.home {
+  position: relative;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 70px 40px 120px;
+}
+
+/* Decorative survey grid. Drawn as a pseudo-element rather than the
+   reference sheet's .grid-bg div, so the markup is untouched.
+
+   Held well below the reference sheet's strength on purpose: there it
+   sits behind a mostly empty cockpit, here it sits behind body copy.
+   At full --g0 it reads as graph paper and fights the text, which is
+   most obvious in the light scheme. Keep it at the edge of visible. */
+.home::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; z-index: -1;
+  opacity: 0.4;
+  background-image:
+    linear-gradient(var(--g0) 1px, transparent 1px),
+    linear-gradient(90deg, var(--g0) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse at center, transparent 45%, black 95%);
+          mask-image: radial-gradient(ellipse at center, transparent 45%, black 95%);
+}
+
+.home-hero {
+  font-family: var(--display);
+  font-size: clamp(28px, 4vw, 44px); font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.12;
+  color: var(--g2);
+  margin: 0 0 20px;
+}
+
+.home-hero em { color: var(--signal-note); font-style: normal; text-shadow: var(--glow-lg); }
+
+.home-lead { font-size: 17px; color: var(--g3); max-width: 640px; margin: 0 0 30px; }
+.home-lead em { color: var(--g2); font-style: normal; }
+
 .home-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 30px 0; }
-.home-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; background: var(--panel); }
-.home-card .n { font-family: var(--mono); color: var(--accent); font-size: 12px; }
-.home-card h3 { font-family: var(--display); font-weight: 500; margin: 8px 0 6px; font-size: 15px; }
-.home-card p { margin: 0; font-size: 13px; color: var(--ink-dim); }
+
+.home-card {
+  position: relative;
+  border: 1px solid var(--g5);
+  padding: 18px;
+  background: var(--panel);
+}
+
+.home-card .n {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--signal-note);
+}
+
+.home-card h3 {
+  font-family: var(--display);
+  font-size: 14px; font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--g1);
+  margin: 10px 0 6px;
+}
+
+.home-card p { margin: 0; font-size: 14px; color: var(--g3); }
+
 .home-start { margin-top: 10px; }
 
+/* ── ANIMATIONS ────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Staggered entry, indexed like the reference sheet's panel children.
+   A child past the last rule simply appears with no animation. */
+.home > *:nth-child(1) { animation: fadeUp 0.8s ease both 0.10s; }
+.home > *:nth-child(2) { animation: fadeUp 0.8s ease both 0.20s; }
+.home > *:nth-child(3) { animation: fadeUp 0.8s ease both 0.30s; }
+.home > *:nth-child(4) { animation: fadeUp 0.8s ease both 0.40s; }
+.home > *:nth-child(5) { animation: fadeUp 0.8s ease both 0.50s; }
+.home > *:nth-child(6) { animation: fadeUp 0.8s ease both 0.60s; }
+
+.topic-wrap > *:nth-child(1) { animation: fadeUp 0.6s ease both 0.05s; }
+.topic-wrap > *:nth-child(2) { animation: fadeUp 0.6s ease both 0.12s; }
+.topic-wrap > *:nth-child(3) { animation: fadeUp 0.6s ease both 0.19s; }
+
+/* ── WORKFLOW ANALYSER ─────────────────────────────────────── */
+.wf-trigger {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--signal-note);
+  border: 1px solid var(--signal-note);
+  padding: 2px 7px;
+  margin: 0 6px 4px 0;
+}
+
+.job-row { padding: 8px 0; border-bottom: 1px solid var(--g5); }
+.job-row:last-child { border-bottom: 0; }
+
+.job-name { color: var(--g1); font-weight: 600; }
+
+.job-badges { display: inline-flex; gap: 6px; margin-left: 8px; flex-wrap: wrap; }
+
+/* Same chip as .layer-tag in the reference sheet: mono, 8px, wide
+   tracking, 1px frame in the colour it carries. */
+.jb {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  align-self: center;
+}
+
+.jb.reusable { color: var(--signal-note); border: 1px solid var(--signal-note); }
+.jb.report   { color: var(--signal-warn); border: 1px solid var(--signal-warn); }
+.jb.needs    { color: var(--g3);          border: 1px solid var(--g5); }
+.jb.steps    { color: var(--g4);          border: 1px solid var(--g5); }
+
+.job-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--g4);
+  margin-top: 3px;
+}
+
+/* ── MERGE-GATE SIMULATOR ──────────────────────────────────── */
+/* The verdict banner is the only place in the app where a signal
+   colour fills a whole strip. It uses the same wash tokens as an
+   answered quiz row, so the pass/block pair reads as the same
+   "settled" state the quiz uses. */
+.gate-verdict {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  margin: 0 0 14px;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+.gate-verdict.pass  { color: var(--signal-ok);  border-color: var(--signal-ok);  background: var(--wash-ok); }
+.gate-verdict.block { color: var(--signal-err); border-color: var(--signal-err); background: var(--wash-err); }
+
+.gate-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--g4);
+  margin: -6px 0 14px;
+}
+
+/* --glass, matching .quiz-opt: four of these stack, and --g0 is a
+   big enough step on paper that they read as grey slabs. */
+.gate-check {
+  display: grid; grid-template-columns: 84px 1fr auto; gap: 10px;
+  align-items: center;
+  width: 100%; text-align: left; cursor: pointer;
+  border: 1px solid var(--g5);
+  background: var(--glass);
+  color: var(--g2);
+  padding: 9px 12px; margin: 7px 0;
+  font-family: var(--body); font-size: 15px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.gate-check:hover { border-color: var(--g2); color: var(--g1); }
+
+.gate-status {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.gate-status.pass { color: var(--signal-ok); }
+.gate-status.fail { color: var(--signal-err); }
+
+.gate-req {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  align-self: center;
+}
+
+.gate-req.required { color: var(--signal-note); border: 1px solid var(--signal-note); }
+.gate-req.optional { color: var(--g4);          border: 1px solid var(--g5); }
+
+.gate-hint {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--g4);
+  padding-top: 6px;
+}
+
+/* ── RESPONSIVE ────────────────────────────────────────────── */
+/* The only breakpoint. Everything else scales with clamp() and
+   ch units — the two-column shell is the one thing that genuinely
+   has to change shape rather than shrink. */
 @media (max-width: 860px) {
   .shell { grid-template-columns: 1fr; }
-  .rail { position: static; height: auto; }
+  .rail { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--g4); }
   .home-grid { grid-template-columns: 1fr; }
   .topic-wrap { padding: 30px 20px 90px; }
+  .topic-wrap::before, .topic-wrap::after { display: none; }
   .gate-check { grid-template-columns: 70px 1fr auto; }
 }
