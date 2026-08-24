@@ -10,9 +10,11 @@ permissions:
   pages: write
   id-token: write
 
+# Only one Pages deploy at a time. Queue a newer push rather than cancelling
+# the running one — cancelling mid-publish can leave the live site half-updated.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -21,7 +23,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Vite 7 needs ^20.19 || >=22.12; pin to 22 for headroom.
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run build
