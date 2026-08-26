@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 /**
- * An interactive merge-gate simulator. The `protect-main` ruleset requires only
+ * An interactive merge-gate simulator. The `protect-master` ruleset requires only
  * a specific subset of the pull-request checks; the rest can go red without
  * blocking the merge. Click any check to flip it pass/fail and watch the verdict.
  *

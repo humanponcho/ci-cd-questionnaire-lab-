@@ -17,7 +17,7 @@ export const section2 = [
       { type: 'workflow', name: 'lint.yml', height: 300, code: `name: Lint
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   di-guardrails:
@@ -62,7 +62,7 @@ jobs:
           ['**Trivy**', 'Builds both Docker images and fails on CRITICAL/HIGH CVEs **that have a fix** (honours `.trivyignore`).'],
           ['**Dependency audit**', 'A single `better-npm-audit` run against the root lockfile.'],
           ['**Docker validation**', 'Starts the full compose stack and asserts the real `/health` response contains `"database":"connected"`; also boots both production image targets.'],
-          ['**DI compliance**', 'Scans changed files on PRs, everything on `main`; uploads the report as an artifact.'],
+          ['**DI compliance**', 'Scans changed files on PRs, everything on `master`; uploads the report as an artifact.'],
         ]},
       { type: 'terminal', name: 'bash', hint: 'try: trivy image · curl /health', session: [
         { cmd: 'trivy image --severity CRITICAL,HIGH --ignore-unfixed shop:web', out: [
@@ -90,8 +90,8 @@ jobs:
     group: 'Path A — PR checks',
     title: 'The merge gate',
     blocks: [
-      { type: 'p', text: 'The `protect-main` ruleset requires **exactly these four** checks — nothing more. This is the real gate. Everything else can be red on the PR without stopping the merge.' },
-      { type: 'gate', note: 'Extra rules: the branch must be **up-to-date with `main`**, force-push and branch deletion are **blocked**, and required approvals = **0**. Repository admins can always bypass — so the four checks are the real gate for everyone else.',
+      { type: 'p', text: 'The `protect-master` ruleset requires **exactly these four** checks — nothing more. This is the real gate. Everything else can be red on the PR without stopping the merge.' },
+      { type: 'gate', note: 'Extra rules: the branch must be **up-to-date with `master`**, force-push and branch deletion are **blocked**, and required approvals = **0**. Repository admins can always bypass — so the four checks are the real gate for everyone else.',
         checks: [
           { name: 'Validate Environment Schema', workflow: 'vitest-ci.yml', required: true, status: 'pass' },
           { name: 'Run Fullstack Tests', workflow: 'vitest-ci.yml', required: true, status: 'pass' },
@@ -100,7 +100,7 @@ jobs:
         ]},
       { type: 'callout', text: 'Because required approvals = 0, the automation **is** the approval. The four green checks are what let the change land — there is no human sign-off step.' },
       { type: 'quiz', questions: [
-        { q: 'How many required checks does `protect-main` demand?', options: ['Two', 'Exactly four', 'Ten', 'One per workflow'], answer: 1,
+        { q: 'How many required checks does `protect-master` demand?', options: ['Two', 'Exactly four', 'Ten', 'One per workflow'], answer: 1,
           explain: 'Exactly four: Validate Environment Schema, Run Fullstack Tests, Audit Dependencies, and DI Guardrails (blocking).' },
         { q: 'What is the required-approvals count?', options: ['1', '2', '0 — the checks are the approval', 'It depends on the file'], answer: 2,
           explain: 'Required approvals = 0. With one maintainer, the four automated checks stand in for a reviewer.' },
@@ -114,7 +114,7 @@ jobs:
     group: 'Path B — Deployment',
     title: 'The deployment workflow',
     blocks: [
-      { type: 'p', text: '`deploy-production.yml` triggers on **every push to `main`**. Its concurrency group is `deploy-production` with `cancel-in-progress: false`, so deploys **queue** instead of cancelling each other. First it calls **five reusable workflows in parallel** — all must pass before the deploy job runs.' },
+      { type: 'p', text: '`deploy-production.yml` triggers on **every push to `master`**. Its concurrency group is `deploy-production` with `cancel-in-progress: false`, so deploys **queue** instead of cancelling each other. First it calls **five reusable workflows in parallel** — all must pass before the deploy job runs.' },
       { type: 'code', name: 'the deploy fan-out', lang: 'text', code: `ci (vitest-ci) ─┐
 security-scan ──┤
 dependency-audit┼──► all must pass ──► deploy
@@ -126,7 +126,7 @@ container-scan ─┘` },
       { type: 'workflow', name: 'deploy-production.yml', height: 320, code: `name: Deploy to Production
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 concurrency:
   group: deploy-production
@@ -172,7 +172,7 @@ jobs:
       { type: 'workflow', name: 'security-sast.yml', height: 230, code: `name: Security SAST
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
   workflow_call:
 
 concurrency:
@@ -186,11 +186,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: semgrep ci --config p/javascript --config p/owasp-top-ten` },
-      { type: 'callout', kind: 'warn', text: 'The fix: give the reusable and standalone runs **distinct group names**. The cost is honest — a push to `main` now does duplicate work (the standalone run **and** the embedded run), but the deploy no longer cancels itself.' },
+      { type: 'callout', kind: 'warn', text: 'The fix: give the reusable and standalone runs **distinct group names**. The cost is honest — a push to `master` now does duplicate work (the standalone run **and** the embedded run), but the deploy no longer cancels itself.' },
       { type: 'quiz', questions: [
         { q: 'During a `workflow_call`, what does `${{ github.workflow }}` resolve to?', options: ['The reusable workflow\'s own name', 'The caller\'s workflow name', 'An empty string', 'A random id'], answer: 1,
           explain: 'It becomes the caller\'s name, so the embedded run shares a concurrency group with the standalone run.' },
-        { q: 'What was the cost of the fix?', options: ['Slower runners', 'Duplicate work on every push to `main`', 'Losing the security scan', 'Nothing'], answer: 1,
+        { q: 'What was the cost of the fix?', options: ['Slower runners', 'Duplicate work on every push to `master`', 'Losing the security scan', 'Nothing'], answer: 1,
           explain: 'Splitting the group names means the standalone and embedded runs both execute — duplicate work, but no self-cancelling deploy.' },
       ]},
     ],

@@ -46,7 +46,7 @@ jobs:
         ]},
       ]},
       { type: 'quiz', questions: [
-        { q: 'What event triggers the live smoke tests?', options: ['push to main', 'pull_request', 'deployment_status (success, production)', 'schedule'], answer: 2,
+        { q: 'What event triggers the live smoke tests?', options: ['push to master', 'pull_request', 'deployment_status (success, production)', 'schedule'], answer: 2,
           explain: 'Path C reacts to `deployment_status` when state is success and the environment is production.' },
         { q: 'How are secrets given to the smoke step?', options: ['Written to .env', 'Committed to the repo', 'Through an `env:` block only', 'Printed to the log'], answer: 2,
           explain: 'Secrets are injected via `env:` for the run and never persisted to a tracked or uploaded file.' },
@@ -111,7 +111,7 @@ updates:
       { type: 'p', text: 'Some things about this system look like defects but are **deliberate trade-offs**. Knowing which is which is the point of the review.' },
       { type: 'ul', items: [
         '**The merge gate is intentionally narrow.** Several security and validation workflows can go red without blocking the merge — but they **do** block the production deploy.',
-        '**A push to `main` runs the heavy work twice** (standalone + reusable) — the accepted cost of the concurrency-group fix.',
+        '**A push to `master` runs the heavy work twice** (standalone + reusable) — the accepted cost of the concurrency-group fix.',
         '`security.yml` **overlaps** `dependency-audit.yml` and has no concurrency group.',
         'The **DI-compliance comment is stale** — the scan is already blocking.',
         '**Coverage thresholds** are declared in the Vitest config but never enforced (no `--coverage` flag).',
@@ -121,7 +121,7 @@ updates:
       { type: 'quiz', questions: [
         { q: 'The narrow merge gate means non-required checks that go red…', options: ['block the merge anyway', 'block nothing at all', 'still block the production deploy', 'delete the branch'], answer: 2,
           explain: 'They are advisory for the merge but required by Path B, so red still blocks the release.' },
-        { q: 'Which is a genuine rough edge, not a deliberate design choice?', options: ['The narrow merge gate', 'Duplicate work on push to main', 'Coverage thresholds declared but never enforced', 'Queuing deploys'], answer: 2,
+        { q: 'Which is a genuine rough edge, not a deliberate design choice?', options: ['The narrow merge gate', 'Duplicate work on push to master', 'Coverage thresholds declared but never enforced', 'Queuing deploys'], answer: 2,
           explain: 'Coverage thresholds exist in config but no `--coverage` flag enforces them — a known gap, unlike the intentional narrow gate.' },
       ]},
     ],
@@ -140,7 +140,7 @@ updates:
           'Four: env schema, fullstack tests, dependency audit, DI Guardrails',
           'Seven, one per workflow',
           'Zero — approvals are 0'], answer: 1,
-          explain: 'The `protect-main` ruleset requires exactly four checks; the rest are report-only for the merge (but block the deploy).' },
+          explain: 'The `protect-master` ruleset requires exactly four checks; the rest are report-only for the merge (but block the deploy).' },
         { q: '2. Why is `depends_on`-style `needs` not the whole story for the deploy — what forces every migration to be backward-compatible?', options: [
           'Migrations run after the code is live',
           'Migrations run BEFORE the new code is live, so the old release must still work',

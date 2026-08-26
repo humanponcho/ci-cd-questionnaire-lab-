@@ -34,7 +34,7 @@ Each topic has three parts: **read the concept → run the tool → test yoursel
 ## How the interactive tools work
 
 - **Workflow Lab** (`src/playgrounds/WorkflowLab.jsx`) — parses a GitHub Actions workflow YAML client-side (via `src/lib/yaml.js`), lists its **triggers** and **jobs** (the `needs` graph, reusable-workflow calls, step counts, report-only `continue-on-error` jobs), and lints the real traps from the lesson: the `${{ github.workflow }}` concurrency collision, and secrets written into a tracked file. Edit it, press **▶ Analyze**.
-- **Merge Gate** (`src/playgrounds/MergeGate.jsx`) — an interactive `protect-main` simulator. Click any PR check to flip it pass ⇄ fail and watch the verdict. Proves the gate is deliberately narrow: only the **four required** checks block the merge.
+- **Merge Gate** (`src/playgrounds/MergeGate.jsx`) — an interactive `protect-master` simulator. Click any PR check to flip it pass ⇄ fail and watch the verdict. Proves the gate is deliberately narrow: only the **four required** checks block the merge.
 - **Terminal** (`src/playgrounds/Terminal.jsx`) — a *simulated* shell for `git` / `gh` / `vercel` / `npm` and Actions run logs. Press **▶ Run demo**, or type one of the commands.
 
 ## Editing content
